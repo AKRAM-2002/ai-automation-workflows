@@ -1,0 +1,233 @@
+{
+  "name": "Stock Tracker with Notion and Alpha Vantage",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "1ecc2cd7-8c49-80d6-b745-ebe02842a54c",
+          "mode": "list",
+          "cachedResultName": "Stock Portfolio Tracker",
+          "cachedResultUrl": "https://www.notion.so/1ecc2cd78c4980d6b745ebe02842a54c"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "79c010e8-57aa-4786-84f9-69a3f4a630cd",
+      "name": "Get tickers [NOTION]",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        440
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Get tickers [NOTION]').item.json.id }}",
+          "mode": "id",
+          "__regex": "^([0-9a-f]{8}-?[0-9a-f]{4}-?4[0-9a-f]{3}-?[89ab][0-9a-f]{3}-?[0-9a-f]{12})"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Price|number",
+              "numberValue": "={{ Number($json['Global Quote']['05. price']) }}"
+            },
+            {
+              "key": "Price Date|date",
+              "includeTime": false,
+              "date": "={{ $json['Global Quote']['07. latest trading day'] }}",
+              "timezone": "America/New_York"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e12e837f-ff24-44e1-9c2b-87a866eefa3b",
+      "name": "Update rows [NOTION]",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        480,
+        220
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "318ff459-8ece-4945-9d33-e217548c6a85",
+      "name": "No operation",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        40,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "df39aa7b-bd2b-4093-bbf2-28af0083bd03",
+      "name": "Split in batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={{ $json[\"property_ticker\"] }}&apikey=IDD8UGQ7YX80OORU",
+        "options": {}
+      },
+      "id": "40a09ecc-f01a-46f1-b45b-d7eedcf4f29f",
+      "name": "Quote endpoint [VANTAGE ALPHA]",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        260,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "3196edc3-280f-4972-a684-887561677048",
+      "name": "Schedule trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -600,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 12,
+        "unit": "seconds"
+      },
+      "id": "06d7cbdf-2a18-4601-9ecf-57cb1f654f53",
+      "name": "Wait 12 second",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        40,
+        220
+      ],
+      "webhookId": "2f1d1415-8666-4564-be5f-da72eadd3dc8"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get tickers [NOTION]": {
+      "main": [
+        [
+          {
+            "node": "Split in batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split in batches": {
+      "main": [
+        [
+          {
+            "node": "Wait 12 second",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quote endpoint [VANTAGE ALPHA]": {
+      "main": [
+        [
+          {
+            "node": "Update rows [NOTION]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows [NOTION]": {
+      "main": [
+        [
+          {
+            "node": "Split in batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule trigger": {
+      "main": [
+        [
+          {
+            "node": "Get tickers [NOTION]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 12 second": {
+      "main": [
+        [
+          {
+            "node": "Quote endpoint [VANTAGE ALPHA]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1ac2b19a-00df-47aa-b109-abb0cc978fb4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a70a52f3bd67ed78ffdac4d3352e150bde536b3c1730077fd78d5dd065812d8a"
+  },
+  "id": "0mNYQBp5JpwMDvB0",
+  "tags": []
+}
