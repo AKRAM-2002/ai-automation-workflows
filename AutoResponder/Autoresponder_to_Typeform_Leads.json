@@ -1,0 +1,416 @@
+{
+  "name": "Autoresponder to Typeform Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "formId": "u4WHJFkP"
+      },
+      "type": "n8n-nodes-base.typeformTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -300,
+        -40
+      ],
+      "id": "68476c76-389a-4d30-8c20-c18741988e89",
+      "name": "Typeform Trigger",
+      "webhookId": "a979c5ce-3482-4a62-9b69-67e32a636a21",
+      "credentials": {
+        "typeformApi": {
+          "id": "adfO6SZSbCGvebXT",
+          "name": "Typeform account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $input.item.json;\n\nconst weights = {\n  budget: 30,\n  niche: 25,\n  experience: 20,\n  adHistory: 15,\n  urgency: 10,\n};\n\nlet score = 0;\n\n// Extract responses\nconst budgetRaw = input[\"What’s your average monthly marketing budget?\"];\nconst niche = input[\"Business Niche\"]?.toLowerCase() || '';\nconst experience = input[\"Main Business Goal\"]?.toLowerCase() || '';\nconst hasRunAds = input[\"Have you run ads before?\"] === true;\nconst urgency = input[\"Do you have video content or testimonials ready?\"] === true;\n\n// --- Budget scoring\nconst budget = parseFloat(budgetRaw?.replace(/[^0-9.]/g, '') || '0');\nif (budget >= 3000) score += weights.budget;\nelse if (budget >= 1000) score += weights.budget * 0.6;\nelse score += weights.budget * 0.3;\n\n// --- Niche scoring\nconst highValueNiches = ['real estate', 'ecommerce', 'coaching', 'saas'];\nif (highValueNiches.includes(niche)) score += weights.niche;\nelse score += weights.niche * 0.5;\n\n// --- Experience (based on goal)\nif (experience.includes('scale')) score += weights.experience;\nelse score += weights.experience * 0.5;\n\n// --- Ad History\nscore += hasRunAds ? weights.adHistory : weights.adHistory * 0.2;\n\n// --- Urgency\nscore += urgency ? weights.urgency : weights.urgency * 0.5;\n\nreturn {\n  json: {\n    ...input,\n    leadScore: Math.round(score),\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        -40
+      ],
+      "id": "4818d7a4-84ad-4664-a1f6-11d8aa5ad72e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3816382a-f37e-4ad9-8038-f375a10ff3f1",
+              "leftValue": "={{ $json.leadScore }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        100,
+        0
+      ],
+      "id": "26de4e0f-46a9-412f-b16d-4b3275dcc452",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1zzUQWE9wwGDHyu16arufKh5hwJwRCmU-TqyX7TXiSKw",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zzUQWE9wwGDHyu16arufKh5hwJwRCmU-TqyX7TXiSKw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 404816980,
+          "mode": "list",
+          "cachedResultName": "Feuille 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zzUQWE9wwGDHyu16arufKh5hwJwRCmU-TqyX7TXiSKw/edit#gid=404816980"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email Address": "={{ $json['Email Address'] }}",
+            "Full Name": "={{ $json['Full Name'] }}",
+            "Business Name": "={{ $json['Business Name'] }}",
+            "Phone": "={{ $json.Phone }}",
+            "Website URL": "={{ $json['Website URL (optional)'] }}",
+            "Business Niche": "={{ $json['Business Niche'] }}",
+            "Main Business Goal": "={{ $json['Main Business Goal'] }}",
+            "Have you run ads before?": "={{ $json['Have you run ads before?'] }}",
+            "Ad Platforms": "={{ $json['If yes, What platforms have you used?'] }}",
+            "Budget": "={{ $json['What’s your average monthly marketing budget?'] }}",
+            "Ideal Customer": "={{ $json['Who is your ideal customer?'] }}",
+            "Has Video Content?": "={{ $json['Do you have video content or testimonials available?'] }}",
+            "Lead Score": "={{ $json.leadScore }}"
+          },
+          "matchingColumns": [
+            "Email Address"
+          ],
+          "schema": [
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Business Name",
+              "displayName": "Business Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email Address",
+              "displayName": "Email Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website URL",
+              "displayName": "Website URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Business Niche",
+              "displayName": "Business Niche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Main Business Goal",
+              "displayName": "Main Business Goal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Have you run ads before?",
+              "displayName": "Have you run ads before?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ad Platforms",
+              "displayName": "Ad Platforms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ideal Customer",
+              "displayName": "Ideal Customer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Has Video Content?",
+              "displayName": "Has Video Content?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        300,
+        -140
+      ],
+      "id": "dad59390-5944-4af5-ade6-89ecab74427a",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1iWD57an4HhdQhHT",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "13b77f2b-4ddf-41dc-a3c4-6abc717fcfd8",
+              "name": "name",
+              "value": "={{ $json['Business Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f8eb6830-8140-4cff-979b-a1f77953eff9",
+              "name": "goal",
+              "value": "={{ $json['Main Business Goal'] }}",
+              "type": "string"
+            },
+            {
+              "id": "1cfd913b-cd3c-4f70-9e6e-11f110dfb0a5",
+              "name": "budget",
+              "value": "={{ $json.Budget }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        -140
+      ],
+      "id": "52ce76f8-37ca-4624-b4a0-052d440e528d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "chatId": "1508765262",
+        "text": "=🔥 New Lead!\nName: {{ $json.name }}\nGoal: {{$json.goal}}\nBudget: {{$json.budget}}\n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "c8a622dc-df84-41d1-a8dc-3add520c5ca2",
+      "name": "Telegram",
+      "webhookId": "4cb040ef-3a1f-4d0c-8e5a-5038f8820d91",
+      "credentials": {
+        "telegramApi": {
+          "id": "ibF4H5B8ssuNl4I5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Google Sheets').item.json['Email Address'] }}",
+        "subject": "You're a great fit for our offer!",
+        "emailType": "text",
+        "message": "=Hi {{ $json.name }},\nThanks for your submission. Based on your goal, we'd love to book a strategy call.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        -200
+      ],
+      "id": "f54540c3-d9ad-412f-8f8c-1c962a0b6574",
+      "name": "Gmail",
+      "webhookId": "4acd81b6-6f2a-4913-ad6a-eaba3c83b66a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VgdHFFjsd0wApMSL",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Typeform Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "166301dc-20e6-46c8-84ee-ac6027e7dc3e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a70a52f3bd67ed78ffdac4d3352e150bde536b3c1730077fd78d5dd065812d8a"
+  },
+  "id": "uY0N6ZvK57Ee2NbY",
+  "tags": []
+}
