@@ -1,0 +1,217 @@
+{
+  "name": "OCR Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $json['Invoice PDF'][0] }}",
+        "options": {}
+      },
+      "id": "1ae139b0-8843-4edc-a3d5-d2313a6e7595",
+      "name": "Get PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        920,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "invoice"
+      },
+      "id": "c0a315b8-463c-44a0-91d7-91f0da3b774f",
+      "name": "Doc OCR [Mindee]",
+      "type": "n8n-nodes-base.mindee",
+      "typeVersion": 3,
+      "position": [
+        1140,
+        200
+      ],
+      "credentials": {
+        "mindeeInvoiceApi": {
+          "id": "6LyKUhj51gqSffXR",
+          "name": "Mindee Invoice API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json['Invoice PDF'][0] }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json['Customer name'] }}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{ $json.Value }}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{ $json['Customer name'] }}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{ $json.Currency }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "33567fb9-b882-46f5-af30-2b326a6a9b39",
+      "name": "Filter out non-empty records",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion trigger').item.json.id }}",
+          "mode": "id",
+          "__regex": "^([0-9a-f]{8}-?[0-9a-f]{4}-?4[0-9a-f]{3}-?[89ab][0-9a-f]{3}-?[0-9a-f]{12})"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Invoice number|title",
+              "title": "={{ $json.invoice_number }}"
+            },
+            {
+              "key": "Customer name|rich_text",
+              "textContent": "={{ $json.customer_name }}"
+            },
+            {
+              "key": "Date|date",
+              "includeTime": false,
+              "date": "={{ $json.date }}"
+            },
+            {
+              "key": "Value|number",
+              "numberValue": "={{ $json.line_items[0].total_amount }}"
+            },
+            {
+              "key": "Currency|rich_text",
+              "textContent": "={{ $('Filter out non-empty records').item.json.Currency }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cca725f1-da20-4ba7-a5af-f466cbf146bb",
+      "name": "Update records [NOTION]",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        200
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "pagedUpdatedInDatabase",
+        "databaseId": {
+          "__rl": true,
+          "value": "1ecc2cd7-8c49-8065-8133-c2dc69a2a6fb",
+          "mode": "list",
+          "cachedResultName": "OCR Assistant",
+          "cachedResultUrl": "https://www.notion.so/1ecc2cd78c4980658133c2dc69a2a6fb"
+        }
+      },
+      "id": "776113fb-705b-46b3-af7d-e1edee024f92",
+      "name": "Notion trigger",
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        480,
+        200
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get PDF": {
+      "main": [
+        [
+          {
+            "node": "Doc OCR [Mindee]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Doc OCR [Mindee]": {
+      "main": [
+        [
+          {
+            "node": "Update records [NOTION]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter out non-empty records": {
+      "main": [
+        [
+          {
+            "node": "Get PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter out non-empty records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9cedb493-76c1-4312-ba8a-b65cc4e89545",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a70a52f3bd67ed78ffdac4d3352e150bde536b3c1730077fd78d5dd065812d8a"
+  },
+  "id": "Gw6waaZeVuUOAN0b",
+  "tags": []
+}
