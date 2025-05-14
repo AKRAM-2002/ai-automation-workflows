@@ -1,0 +1,176 @@
+{
+  "name": "Social Media generator with Renderform",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "databaseId": {
+          "__rl": true,
+          "value": "1ecc2cd7-8c49-803f-93c5-e29fd7a0ac75",
+          "mode": "list",
+          "cachedResultName": "Social Image Generator",
+          "cachedResultUrl": "https://www.notion.so/1ecc2cd78c49803f93c5e29fd7a0ac75"
+        }
+      },
+      "id": "8f21a184-cadb-4279-9e81-ed1d79c3e714",
+      "name": "Notion trigger",
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        200
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Social }}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{ $json.Name }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.Position }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.Image }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "d132f639-efcd-4ed9-b2fe-f19a7c257d0b",
+      "name": "Filter out empty and finished records",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://get.renderform.io/api/v2/render",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"template\":\"happy-doves-plan-soon-1089\",\"data\":{\"image.src\":\"{{ $json.Image }}\",\"topic.text\":\"{{ $json.Topic }}\",\"presenter.text\":\"{{ $json.Name }}\",\"presenter_title.text\":\"{{ $json.Position }}\"}}",
+        "options": {}
+      },
+      "id": "58d63f65-ed05-499b-9dda-52c9552b762e",
+      "name": "Generate image [RENDERFORM]",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        40,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "95ihXdHnKffRUWII",
+          "name": "Render Form API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Notion trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Social|url",
+              "urlValue": "={{ $json.href }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2f0abd5-5237-430a-8ee0-df193e07918f",
+      "name": "Update records [NOTION]",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        260,
+        200
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "cm3WNMqJyPApnft1",
+          "name": "Notion API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Notion trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter out empty and finished records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter out empty and finished records": {
+      "main": [
+        [
+          {
+            "node": "Generate image [RENDERFORM]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image [RENDERFORM]": {
+      "main": [
+        [
+          {
+            "node": "Update records [NOTION]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "60568a61-506f-4805-8661-d26c79305c36",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a70a52f3bd67ed78ffdac4d3352e150bde536b3c1730077fd78d5dd065812d8a"
+  },
+  "id": "U6GkPnWjRE6OQtWS",
+  "tags": []
+}
